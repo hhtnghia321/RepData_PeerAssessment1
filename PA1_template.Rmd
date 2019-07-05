@@ -18,6 +18,7 @@ library(ggplot2)
 library(lubridate)
 library(data.table)
 library(VIM)
+library(scales)
 opts_chunk$set(cache = FALSE, message = FALSE)
 ```
 * Turn off *cache* and *message* in global option   
@@ -28,6 +29,8 @@ opts_chunk$set(cache = FALSE, message = FALSE)
   + libridate: for reformating datedata format  
   + data.table: for reformating datedata format   
   + impute: for imputing missing value   
+  + sacles: for scaling the Time format in the plot for better intepretation
+  
 
 ## Loading and preprocessing the data
 ```{r results= "hide"}
@@ -68,7 +71,7 @@ ggplot(data = group.Total1, aes(x= Totalstep)) +
 Before ploting time series line chart by 5-minute of step, I have to add one more columns of Time data with the interval of increment of 5-minutes. Then I add its to the original dataset. I also add one more interval columns as the Time format (HH:MM:SS)
 ```{r createtime}
 Time <- seq.POSIXt(from = as.POSIXct(ymd_hms("2012-10-01 00:00:01")),to = as.POSIXct(ymd_hms("2012-11-30 23:55:01")), by = "5 min")
-data <- cbind(data, Time)
+data$Time <- Time
 data$intervaltime <- as.ITime(data$Time)
 ```
 
@@ -81,6 +84,7 @@ Ploting the time series based on the 5-minute time series
 ```{r}
 ggplot(groupave, aes(x =as.POSIXct(groupave$intervaltime, format = "%H:%M:%S"), y = Averagestep)) +
   geom_line() +
+  scale_x_datetime(breaks = date_breaks("5 hours"), labels = date_format("%H:%M")) +
   labs(x = "Times of a day", title = "The Allocation Of Average Step During a Day") +
   theme(plot.title = element_text(hjust = 0.5))
 ```
@@ -158,16 +162,9 @@ for ( i in 1: length(weekdays)) {
 weekdays <- factor(weekdays)
 
 #create a new column in the dataset with imputed value
-imputedata <-  cbind(imputedata, weekdays)
+imputedata$weekdays <-  weekdays
 
 ```
-
-Before ploting time series line chart by 5-minute of step, I have to add one more columns of Time data with the interval of increment of 5-minutes. Then I add its to the original dataset. I also add one more interval columns as the Time format (HH:MM:SS)
-```{r createtime}
-imputedata <- cbind(imputedata, Time)
-imputedata$intervaltime <- as.ITime(data$Time)
-```
-
 
 Calculating the average numbers of step by each interval by weekday and weekend  
 ```{r}
@@ -179,7 +176,8 @@ Ploting the time series based on the 5-minute time series
 ggplot(groupweekday, aes(x =as.POSIXct(groupweekday$intervaltime, format = "%H:%M:%S"), y = Averagestep)) +
   facet_grid(weekdays ~.) +
   geom_line() +
-  labs(x = "Times of a day", title = "The Allocation Of Average Step During a Day") +
+  scale_x_datetime(breaks = date_breaks("5 hours"), labels = date_format("%H:%M")) +
+  labs(x = "Times of a day", title = "The Allocation Of Average Step During a Day of weekend and weekdays") +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 

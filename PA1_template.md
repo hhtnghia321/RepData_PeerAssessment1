@@ -1,12 +1,14 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
+title: 'Reproducible Research: Peer Assessment 1'
+output:
   html_document:
-    keep_md: true
+    keep_md: yes
+  pdf_document: default
+  word_document: default
 header-includes:
-  - \usepackage{color}
-  - \usepackage{xcolor}
-  - \usepackage{framed}
+- \usepackage{color}
+- \usepackage{xcolor}
+- \usepackage{framed}
 ---
 ## Setting global options and loading packages
 
@@ -17,6 +19,7 @@ library(ggplot2)
 library(lubridate)
 library(data.table)
 library(VIM)
+library(scales)
 opts_chunk$set(cache = FALSE, message = FALSE)
 ```
 * Turn off *cache* and *message* in global option   
@@ -27,6 +30,8 @@ opts_chunk$set(cache = FALSE, message = FALSE)
   + libridate: for reformating datedata format  
   + data.table: for reformating datedata format   
   + impute: for imputing missing value   
+  + sacles: for scaling the Time format in the plot for better intepretation
+  
 
 ## Loading and preprocessing the data
 
@@ -72,7 +77,7 @@ Before ploting time series line chart by 5-minute of step, I have to add one mor
 
 ```r
 Time <- seq.POSIXt(from = as.POSIXct(ymd_hms("2012-10-01 00:00:01")),to = as.POSIXct(ymd_hms("2012-11-30 23:55:01")), by = "5 min")
-data <- cbind(data, Time)
+data$Time <- Time
 data$intervaltime <- as.ITime(data$Time)
 ```
 
@@ -87,6 +92,7 @@ Ploting the time series based on the 5-minute time series
 ```r
 ggplot(groupave, aes(x =as.POSIXct(groupave$intervaltime, format = "%H:%M:%S"), y = Averagestep)) +
   geom_line() +
+  scale_x_datetime(breaks = date_breaks("5 hours"), labels = date_format("%H:%M")) +
   labs(x = "Times of a day", title = "The Allocation Of Average Step During a Day") +
   theme(plot.title = element_text(hjust = 0.5))
 ```
@@ -190,6 +196,27 @@ for ( i in 1: length(weekdays)) {
 weekdays <- factor(weekdays)
 
 #create a new column in the dataset with imputed value
-cbind(imputedata, weekdays)
+imputedata$weekdays <-  weekdays
 ```
+
+Calculating the average numbers of step by each interval by weekday and weekend  
+
+```r
+groupweekday <- group_by(imputedata, weekdays , intervaltime) %>% summarise(Averagestep = mean(steps, na.rm = TRUE))
+```
+
+Ploting the time series based on the 5-minute time series
+
+```r
+ggplot(groupweekday, aes(x =as.POSIXct(groupweekday$intervaltime, format = "%H:%M:%S"), y = Averagestep)) +
+  facet_grid(weekdays ~.) +
+  geom_line() +
+  scale_x_datetime(breaks = date_breaks("5 hours"), labels = date_format("%H:%M")) +
+  labs(x = "Times of a day", title = "The Allocation Of Average Step During a Day of weekend and weekdays") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+> As, can be seen there are a little bit difference of averager step between weekdays and weekend. The averagesteps peak could reach above 200 in the range of 8AM to 10AM in weekdays, while this only reach 150 in weekend. However, in other time of the day in weekend, the average step took more and more stable from 12AM to 18PM compared to weekdys
 
